@@ -1,0 +1,15 @@
+{
+  "name": "datetime",
+  "version": "1.0.0",
+  "description": "A simple program returning date and time based on the given timezone",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "SEE LICENSE IN LICENSE",
+  "dependencies": {
+    "express": "^4.13.4",
+    "time": "^0.11.4"
+  }
+}

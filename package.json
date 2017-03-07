@@ -1,0 +1,30 @@
+{
+  "name": "loopback-connector-zosconnectee",
+  "version": "1.0.0",
+  "description": "LoopBack Connector for z/OS Connect Enterprise Edition",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "IBM",
+    "API Connect",
+    "z/OS",
+    "StrongLoop",
+    "LoopBack",
+    "Connector"
+  ],
+  "author": {
+    "name": "IBM"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "readmeFilename": "README.md",
+  "dependencies": {
+    "async": "^1.5.2",
+    "colors": "^1.1.2",
+    "loopback-connector-rest": "^2.0.0"
+  },
+  "scripts": {
+      "install" : "tar czf generator-zosconnectee.tgz generator-zosconnectee; npm install generator-zosconnectee.tgz -g"
+  }
+}

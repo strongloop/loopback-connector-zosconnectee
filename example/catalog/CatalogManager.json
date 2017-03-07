@@ -1,0 +1,298 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "APIs for browsing, inquiring and ordering items from a catalog",
+    "version": "1.0.0",
+    "title": "catalog"
+  },
+  "host": "10.3.20.1:50743",
+  "basePath": "/catalogManager",
+  "schemes": [
+    "https",
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/items": {
+      "get": {
+        "parameters": [
+          {
+            "name": "startItemID",
+            "in": "query",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "normal response",
+            "schema": {
+              "$ref": "#/definitions/inquireCatalog_GET_response_200"
+            }
+          }
+        }
+      }
+    },
+    "/items/{itemID}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "itemID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "normal response",
+            "schema": {
+              "$ref": "#/definitions/inquireSingle_GET_response_200"
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "placeOrder_POST_request",
+            "description": "request body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/placeOrder_POST_request"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "normal response",
+            "schema": {
+              "$ref": "#/definitions/placeOrder_POST_response_200"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "inquireSingle_GET_response_200": {
+      "type": "object",
+      "required": [
+        "DFH0XCMNOperationResponse"
+      ],
+      "properties": {
+        "DFH0XCMNOperationResponse": {
+          "type": "object",
+          "properties": {
+            "ca_return_code": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99
+            },
+            "ca_response_message": {
+              "type": "string",
+              "maxLength": 79
+            },
+            "ca_inquire_single": {
+              "type": "object",
+              "properties": {
+                "ca_single_item": {
+                  "type": "object",
+                  "properties": {
+                    "ca_sngl_item_ref": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9999
+                    },
+                    "in_sngl_stock": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9999
+                    },
+                    "ca_sngl_description": {
+                      "type": "string",
+                      "maxLength": 40
+                    },
+                    "ca_sngl_cost": {
+                      "type": "string",
+                      "maxLength": 6
+                    },
+                    "ca_sngl_department": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 999
+                    },
+                    "on_sngl_order": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 999
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "Response schema for the DFH0XCMN JSON interface"
+    },
+    "placeOrder_POST_request": {
+      "type": "object",
+      "required": [
+        "DFH0XCMNOperation"
+      ],
+      "properties": {
+        "DFH0XCMNOperation": {
+          "type": "object",
+          "properties": {
+            "ca_order_request": {
+              "type": "object",
+              "properties": {
+                "ca_quantity_req": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 999
+                },
+                "ca_item_ref_number": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9999
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "Request schema for the DFH0XCMN JSON interface"
+    },
+    "placeOrder_POST_response_200": {
+      "type": "object",
+      "required": [
+        "DFH0XCMNOperationResponse"
+      ],
+      "properties": {
+        "DFH0XCMNOperationResponse": {
+          "type": "object",
+          "properties": {
+            "ca_return_code": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99
+            },
+            "ca_response_message": {
+              "type": "string",
+              "maxLength": 79
+            }
+          }
+        }
+      },
+      "description": "Response schema for the DFH0XCMN JSON interface"
+    },
+    "inquireCatalog_GET_response_200": {
+      "type": "object",
+      "required": [
+        "DFH0XCMNOperationResponse"
+      ],
+      "properties": {
+        "DFH0XCMNOperationResponse": {
+          "type": "object",
+          "properties": {
+            "ca_return_code": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99
+            },
+            "ca_inquire_request": {
+              "type": "object",
+              "properties": {
+                "ca_last_item_ref": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9999
+                },
+                "ca_cat_item": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "on_order": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 999
+                      },
+                      "ca_department": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 999
+                      },
+                      "ca_item_ref": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9999
+                      },
+                      "ca_cost": {
+                        "type": "string",
+                        "maxLength": 6
+                      },
+                      "ca_description": {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "in_stock": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9999
+                      }
+                    }
+                  }
+                },
+                "ca_item_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 999
+                },
+                "ca_list_start_ref": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9999
+                }
+              }
+            },
+            "ca_response_message": {
+              "type": "string",
+              "maxLength": 79
+            }
+          }
+        }
+      },
+      "description": "Response schema for the DFH0XCMN JSON interface"
+    }
+  }
+}
+
