@@ -112,7 +112,10 @@ var skeltemplate = {
 };
 
 function getURL(obj, tem) {
-    baseURL = 'http://' + obj.host + obj.basePath;
+    if (obj.schemes.indexOf("https") > -1)
+      baseURL = 'https://' + obj.host + obj.basePath;
+    else
+      baseURL = 'http://' + obj.host + obj.basePath;
 
     tem['template']['url'] = baseURL;
 }
@@ -581,7 +584,7 @@ module.exports = yeoman.Base.extend({
           tempList.push(resource);
         }
       });
-      // this.resourceList = tempList;
+      this.resourceList = tempList;
       done();               /* End Sync */
     }.bind(this));
   },
