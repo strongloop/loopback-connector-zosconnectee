@@ -4,7 +4,7 @@
   "description": "LoopBack Connector for z/OS Connect Enterprise Edition",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Done\"",
     "lint": "eslint .",
     "posttest": "npm run lint"
   },
