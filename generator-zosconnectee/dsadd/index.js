@@ -141,7 +141,7 @@ module.exports = generators.Base.extend({
     }, function(err, data) {
       if (err) cb(err);
       else {
-        DataSourceDefinition.findOne({where: {
+        DataSourceDefinition.findOne({ where: {
           name: dsName,
           facetName: 'server',
         }}, function(err, dsDef) {

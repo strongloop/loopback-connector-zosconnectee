@@ -394,13 +394,13 @@ module.exports = yeoman.Base.extend({
               if (!api.host) {
                 api['host'] = datasource.host + ':' + datasource.port;
               }
-              tempList.push({'dsName': datasource.name,
-                             'dsUserName': datasource.username,
-                             'dsPassword': datasource.password,
-                             'apititle': api.info.title,
-                             'apiversion': api.info.version,
-                             'apiinfo': api.info.description,
-                             'apidocs': api});
+              tempList.push({ 'dsName': datasource.name,
+                'dsUserName': datasource.username,
+                'dsPassword': datasource.password,
+                'apititle': api.info.title,
+                'apiversion': api.info.version,
+                'apiinfo': api.info.description,
+                'apidocs': api });
               done();
             });
         });
@@ -494,13 +494,13 @@ module.exports = yeoman.Base.extend({
                             if (!api.host) {
                               api['host'] = datasource.host + ':' + datasource.port;
                             }
-                            tempList.push({'dsName': datasource.name,
-                                         'dsUserName': datasource.username,
-                                         'dsPassword': datasource.password,
-                                         'apititle': api.info.title,
-                                         'apiversion': api.info.version,
-                                         'apiinfo': api.info.description,
-                                         'apidocs': api});
+                            tempList.push({ 'dsName': datasource.name,
+                              'dsUserName': datasource.username,
+                              'dsPassword': datasource.password,
+                              'apititle': api.info.title,
+                              'apiversion': api.info.version,
+                              'apiinfo': api.info.description,
+                              'apidocs': api });
                             if (tempList.length >= apislist['apis'].length) {
                               done();
                             }
@@ -638,9 +638,9 @@ module.exports = yeoman.Base.extend({
         var tempList = [];
         var deleteResourceList = [];
 
-        for (let k in resourceKeyList) {
+        for (var k in resourceKeyList) {
           var found = false;
-          for (let j in selected.resourceKey) {
+          for (var j in selected.resourceKey) {
             if (resourceKeyList[k].localeCompare(selected.resourceKey[j]) == 0) {
               found = true;
               break;
@@ -651,9 +651,9 @@ module.exports = yeoman.Base.extend({
           }
         }
 
-        for (let i in deleteResourceList) {
+        for (var i in deleteResourceList) {
           var robj = mastertemplate['operations'];
-          for (let k in robj) {
+          for (var k in robj) {
             var tobj = robj[k]['template'];
             var fobj = robj[k]['functions'];
             if (deleteResourceList[i].localeCompare(tobj.url) == 0) {
@@ -812,7 +812,7 @@ module.exports = yeoman.Base.extend({
   _addStructModelToModelCustomFile: function(modelName, modelStruct, operationSet, idParameter) {
     var done = this.async();
 
-    var modelJsonFile = ModelDefinition.getPath('common', {name: modelName});
+    var modelJsonFile = ModelDefinition.getPath('common', { name: modelName });
     try {
       var modelCustomFile = modelJsonFile.slice(0, modelJsonFile.length - 2);
     } catch (ex) {
@@ -821,7 +821,7 @@ module.exports = yeoman.Base.extend({
     }
 
     if (idParameter == false) {
-      var jsonObj = fs.readJsonSync(modelJsonFile, {throws: false});
+      var jsonObj = fs.readJsonSync(modelJsonFile, { throws: false });
       jsonObj.properties.id = null;
       fs.writeJsonSync(modelJsonFile, jsonObj);
     }
@@ -829,7 +829,7 @@ module.exports = yeoman.Base.extend({
     /* Read template to construct model custom file content */
     var template = tempfile;
 
-    var loopbackSkeletonOperation = {POST: 'create', PUT: 'upsert', GET: 'findById', DELETE: 'deleteById'};
+    var loopbackSkeletonOperation = { POST: 'create', PUT: 'upsert', GET: 'findById', DELETE: 'deleteById' };
     var configuredOperations = '\'';
     for (var operation in operationSet) {
       configuredOperations += loopbackSkeletonOperation[operation] + ' ';
