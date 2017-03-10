@@ -4,7 +4,9 @@
   "description": "LoopBack Connector for z/OS Connect Enterprise Edition",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "posttest": "npm run lint"
   },
   "keywords": [
     "IBM",
@@ -12,19 +14,22 @@
     "z/OS",
     "StrongLoop",
     "LoopBack",
-    "Connector"
+    "Connector",
+    "z/OS Connect Enterprise Edition",
+    "z/OS Connect EE"
   ],
-  "author": {
-    "name": "IBM"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/strongloop/loopback-connector-zosconnectee"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
     "async": "^1.5.2",
     "colors": "^1.1.2",
     "loopback-connector-rest": "^2.0.0"
   },
-  "scripts": {
-      "install" : "tar czf generator-zosconnectee.tgz generator-zosconnectee; npm install generator-zosconnectee.tgz -g"
+  "devDependencies": {
+    "eslint-config-loopback": "^1.0.0"
   }
 }
