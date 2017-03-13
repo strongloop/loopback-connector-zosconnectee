@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+'use strict';
+
 var nopt = require('nopt');
 var path = require('path');
 var lbGenerator = require('../app/index.js');
@@ -11,19 +13,16 @@ if (!yeoman) {
     // Try to use the yeoman-generator from generator-loopback module
     yeoman = require('strongloop/node_modules/yeoman-generator');
   } catch (err) {
-    try{
+    try {
       yeoman = require('strongloop/node_modules/generator-loopback/node_modules/yeoman-generator');
-    } catch (err){
-
-      try{
+    } catch (err) {
+      try {
         yeoman = require('yeoman-generator');
-      } catch (err){
+      } catch (err) {
         console.log("To resolve issue, install yeoman-generator by using command 'npm install yeoman-generator -g'");
         return;
       }
-
     }
-
   }
 }
 
@@ -46,7 +45,7 @@ function loopback(args, options, loader) {
 
   env.on('error', function(err) {
     console.log('Error', 'zosdiscover \n');
-      console.log( err);
+    console.log(err);
   });
 
   env.run(args, opts);
