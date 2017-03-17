@@ -10,10 +10,10 @@ var SwaggerParser = require('swagger-parser');
 
 try {
     // Try to use the yeoman-generator from generator-loopback module
-  var yeoman = require('strongloop/node_modules/yeoman-generator');
+  var yeoman = require('apiconnect/node_modules/yeoman-generator');
 } catch (ex) {
   try {
-    yeoman = require('strongloop/node_modules/generator-loopback/node_modules/yeoman-generator');
+    yeoman = require('apiconnect/node_modules/generator-loopback/node_modules/yeoman-generator');
   } catch (ex) {
     try {
       yeoman = require('yeoman-generator');
@@ -25,10 +25,10 @@ try {
 }
 
 try {
-  var wsModels = require('strongloop/node_modules/loopback-workspace').models;
+  var wsModels = require('apiconnect/node_modules/loopback-workspace').models;
 } catch (ex) {
   try {
-    wsModels = require('strongloop/node_modules/generator-loopback/node_modules/loopback-workspace').models;
+    wsModels = require('apiconnect/node_modules/generator-loopback/node_modules/loopback-workspace').models;
   } catch (ex) {
     try {
       wsModels = require('loopback-workspace').models;
