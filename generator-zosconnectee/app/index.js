@@ -4,10 +4,10 @@ var async = require('async');
 var yeoman;
 try {
     // Try to use the yeoman-generator from generator-loopback module
-  yeoman = require('strongloop/node_modules/yeoman-generator');
+  yeoman = require('apiconnect/node_modules/yeoman-generator');
 } catch (err) {
   try {
-    yeoman = require('strongloop/node_modules/generator-loopback/node_modules/yeoman-generator');
+    yeoman = require('apiconnect/node_modules/generator-loopback/node_modules/yeoman-generator');
   } catch (err) {
     try {
       yeoman = require('yeoman-generator');
@@ -18,11 +18,11 @@ try {
   }
 }
 
-module.exports = yeoman.generators.Base.extend({
+module.exports = yeoman.Base.extend({
 
   // The name `constructor` is important here
   constructor: function() {
-    yeoman.generators.Base.apply(this, arguments);
+    yeoman.Base.apply(this, arguments);
   },
 
   selectOptions: function() {

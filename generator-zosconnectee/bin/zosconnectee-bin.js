@@ -11,10 +11,10 @@ var yeoman = lbGenerator._yeoman; // generator-loopback should export _yeoman
 if (!yeoman) {
   try {
     // Try to use the yeoman-generator from generator-loopback module
-    yeoman = require('strongloop/node_modules/yeoman-generator');
+    yeoman = require('apiconnect/node_modules/yeoman-generator');
   } catch (err) {
     try {
-      yeoman = require('strongloop/node_modules/generator-loopback/node_modules/yeoman-generator');
+      yeoman = require('apiconnect/node_modules/generator-loopback/node_modules/yeoman-generator');
     } catch (err) {
       try {
         yeoman = require('yeoman-generator');
@@ -33,7 +33,7 @@ function loopback(args, options, loader) {
 
   env.alias(/^([^:]+)$/, 'zosconnectee');
 
-  var root = path.dirname(require.resolve('strongloop/node_modules/generator-loopback/package.json'));
+  var root = path.dirname(require.resolve('apiconnect/node_modules/generator-loopback/package.json'));
   var cwd = process.cwd();
   process.chdir(root);
   env.lookup();
