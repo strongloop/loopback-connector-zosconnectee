@@ -1,42 +1,43 @@
-'use strict';
-
 var async = require('async');
 var util = require('util');
-var http = require('http');
+var http = require("http");
 var url = require('url');
-var fsorig = require('fs');
+var fs = require('fs');
 var path = require('path');
 var SwaggerParser = require('swagger-parser');
 
 try {
     // Try to use the yeoman-generator from generator-loopback module
-  var yeoman = require('apiconnect/node_modules/yeoman-generator');
-} catch (ex) {
-  try {
-    yeoman = require('apiconnect/node_modules/generator-loopback/node_modules/yeoman-generator');
+    yeoman = require('apiconnect/node_modules/yeoman-generator');
   } catch (ex) {
-    try {
-      yeoman = require('yeoman-generator');
-    } catch (ex) {
-      console.log("To resolve issue, install yeoman-generator by using command 'npm install yeoman-generator -g'");
-      return;
-    }
-  }
-}
+    try{
+      yeoman = require('apiconnect/node_modules/generator-loopback/node_modules/yeoman-generator');
+    } catch (ex){
 
-try {
-  var wsModels = require('apiconnect/node_modules/loopback-workspace').models;
-} catch (ex) {
-  try {
-    wsModels = require('apiconnect/node_modules/generator-loopback/node_modules/loopback-workspace').models;
-  } catch (ex) {
-    try {
-      wsModels = require('loopback-workspace').models;
-    } catch (ex) {
-      console.log("To resolve issue, install loopback-workspace by using command 'npm install loopback-workspace -g'");
-      return;
+      try{
+        yeoman = require('yeoman-generator');
+      } catch (ex){
+        console.log("To resolve issue, install yeoman-generator by using command 'npm install yeoman-generator -g'");
+        return;
+      }
+
     }
   }
+
+var wsModels;
+try{
+  wsModels= require('apiconnect/node_modules/loopback-workspace').models;
+} catch(ex) {
+    try{
+      wsModels= require('apiconnect/node_modules/generator-loopback/node_modules/loopback-workspace').models;
+    } catch (ex){
+      try{
+      wsModels= require('loopback-workspace').models;
+      } catch(ex){
+       console.log("To resolve issue, install loopback-workspace by using command 'npm install loopback-workspace -g'");
+       return;
+      }
+    }
 }
 
 var ModelDefinition = wsModels.ModelDefinition;
@@ -47,232 +48,240 @@ var arrayDiff = require('array-difference');
 var fs = require('node-fs-extra');
 
 require('events').EventEmitter.defaultMaxListeners = Infinity;
+var tempfile ;
 
 // Set debugThisGenerator to true for turning ON logging
 //
 var debugThisGenerator = false;
 
-function debugLog(/* ... things to log ... */) {
+function debugLog(/* ... things to log ... */){
   if (debugThisGenerator == false) {
-    return '';
+    return "";
   }
 
   var args = Array.prototype.slice.call(arguments);
-  if (args.length === 0) return '';
-  var message = args.map(function(arg) {
-    return ['string', 'number'].indexOf(typeof(arg)) !== -1 ? arg : util.inspect(arg);
-  }).join(' ');
+  if (args.length === 0) return "";
+  var message = args.map(function(arg){
+    return [ "string", "number" ].indexOf(typeof(arg)) !== -1 ? arg : util.inspect(arg);
+  }).join(" ");
 
-  console.log('[zosconnectee generator] ' + message);
+  console.log("[zosconnectee generator] " + message);
 
   return message;
 };
 
 // Declare variables
 //
-var tempfile, rootobj, baseURL, tem, cred;
+var rootobj;
+var baseURL;
+var tem;
 var resourceKeyList = [];
 var customizeRequired = false;
+var creds;
 var mastertemplate = {
-  'name': '',
-  'connector': 'rest',
-  'strictSSL': false,
-  'debug': false,
-  'defaults': {
-    'headers': {
-      'accept': 'application/json',
-      'content-type': 'application/json',
+    'name': '',
+    'connector': 'rest',
+    'strictSSL': false,
+    'debug': false,
+    'defaults': {
+        'headers': {
+            'accept': 'application/json',
+            'content-type': 'application/json'
+        }
     },
-  },
-  'operations': [],
+    'operations': []
 };
 var skeltemplate = {
   'template': {
     'method': '',
     'url': '',
     'headers': {
-      'authorization': '',
+        'authorization' : ''
     },
     'query': {
     },
     'body': {
     },
     'options': {
-      'strictSSL': false,
-      'userQuerystring': true,
-    },
+        'strictSSL' : false,
+        'userQuerystring' : true
+    }
   },
   'functions': {
-  },
+  }
 };
 
 function getURL(obj, tem) {
-  if (obj.schemes.indexOf('https') > -1) {
-    baseURL = 'https://' + obj.host + obj.basePath;
-  } else {
-    baseURL = 'http://' + obj.host + obj.basePath;
-  }
+    if (obj.schemes.indexOf("https") > -1)
+      baseURL = 'https://' + obj.host + obj.basePath;
+    else
+      baseURL = 'http://' + obj.host + obj.basePath;
 
-  tem['template']['url'] = baseURL;
+    tem['template']['url'] = baseURL;
 }
 
 function processHeaderParameters(creds, apiname, obj, tem) {
-  debugLog('>> processHeaderParameters');
+    debugLog('>> processHeaderParameters');
 
-  for (var ep in obj) {
-    if (obj[ep]['in'] == 'header') {
-      var auth = 'Basic ' + new Buffer(creds.username + ':' + creds.password).toString('base64');
-      tem['template']['headers']['authorization'] = auth;
+    for (var ep in obj) {
+        if (obj[ep]['in'] == 'header') {
+            var auth = 'Basic ' + new Buffer(creds.username + ':' + creds.password).toString('base64');
+            tem['template']['headers']['authorization'] = auth;
+        }
     }
-  }
 
-  debugLog('<< processHeaderParameters');
+    debugLog('<< processHeaderParameters');
 }
 
 function processQueryParameters(apiname, obj, tem) {
-  debugLog('>> processQueryParameters');
-  for (var ep in obj) {
-    if (obj[ep]['in'] == 'query') {
-      var queryParameterName = obj[ep]['name'];
-      tem['template']['query'][queryParameterName] = '{' + queryParameterName + '}';
-      tem['template']['options']['userQuerystring'] = true;
-      var fnname = 'get' + apiname.substr(1, apiname.length);
-      if (!tem['functions'][fnname]) {
-        tem['functions'][fnname] = [];
-      }
-      tem['functions'][fnname].push(queryParameterName);
+    debugLog('>> processQueryParameters');
+    for (var ep in obj) {
+        if (obj[ep]['in'] == 'query') {
+            var queryParameterName = obj[ep]['name'];
+            tem['template']['query'][queryParameterName] = '{'+queryParameterName+'}';
+            tem['template']['options']['userQuerystring'] = true;
+            var fnname = 'get' + apiname.substr(1, apiname.length);
+            if (!tem['functions'][fnname]) {
+              tem['functions'][fnname] = [];
+            }
+            tem['functions'][fnname].push(queryParameterName);
+        }
     }
-  }
 
-  debugLog('<< processQueryParameters');
+    debugLog('<< processQueryParameters');
 }
 
 function processPathParameters(apiname, obj, tem) {
-  debugLog('>> processPathParameters');
-  for (var ep in obj) {
-    if (obj[ep]['in'] == 'path') {
-      var pathParameterName = obj[ep]['name'];
-      tem['template']['query'][pathParameterName] = '{' + pathParameterName + '}';
-      tem['template']['options']['userQuerystring'] = true;
-      var fnname = 'get' + pathParameterName;
-      tem['functions'][fnname] = [pathParameterName];
+    debugLog('>> processPathParameters');
+    for (var ep in obj) {
+        if (obj[ep]['in'] == 'path') {
+            var pathParameterName = obj[ep]['name'];
+            tem['template']['query'][pathParameterName] = '{'+pathParameterName+'}';
+            tem['template']['options']['userQuerystring'] = true;
+            var fnname = 'get' + pathParameterName;
+            tem['functions'][fnname] = [pathParameterName];
+        }
     }
-  }
 
-  debugLog('<< processPathParameters');
+    debugLog('<< processPathParameters');
 }
 
 function processGetOperation(creds, apiname, obj, tem) {
-  debugLog('>> processGetOperation');
+    debugLog('>> processGetOperation');
 
-  delete tem['template']['body'];
-  if (obj['parameters']) {
-    processHeaderParameters(creds, apiname, obj['parameters'], tem);
-    processQueryParameters(apiname, obj['parameters'], tem);
-    processPathParameters(apiname, obj['parameters'], tem);
-  } else {
-    var fnname;
-    if (!obj['operationId']) {
-      fnname = 'get' + apiname.substr(1, apiname.length);
-    } else {
-      fnname = obj['operationId'];
+    delete tem['template']['body'];
+    if(obj['parameters'])
+    {
+      processHeaderParameters(creds, apiname, obj['parameters'], tem);
+      processQueryParameters(apiname, obj["parameters"], tem);
+      processPathParameters(apiname, obj["parameters"], tem);
+    }
+    else
+    {
+      var fnname;
+      if (!obj['operationId'])
+        fnname = 'get' + apiname.substr(1, apiname.length);
+      else
+        fnname = obj['operationId'];
+
+      tem['functions'][fnname] = [];
     }
 
-    tem['functions'][fnname] = [];
-  }
-
-  debugLog('<< processGetOperation');
+    debugLog('<< processGetOperation');
 }
 
 function processBodyParameters(apiname, obj, tem) {
-  debugLog('>> processBodyParameters');
+    debugLog('>> processBodyParameters');
 
-  delete tem['template']['query'];
-  var p;
-  var fnname = 'post' + apiname.substr(1, apiname.length);
-  tem['functions'][fnname] = [];
+    delete tem['template']['query'];
+    var p;
+    var fnname = 'post' + apiname.substr(1, apiname.length);
+    tem['functions'][fnname] = [];
 
-  for (var bp in obj) {
-    if (obj[bp]['in'] == 'body') {
-      var bodyParameterName = obj[bp]['name'];
+    for (var bp in obj) {
+        if (obj[bp]['in'] == 'body') {
+            var bodyParameterName = obj[bp]['name'];
 
-      if (! rootobj['definitions'][bodyParameterName]) {
-        p = obj[bp]['schema']['properties'];
-      } else {
-        p = rootobj['definitions'][bodyParameterName]['properties'];
-      }
+            if (! rootobj['definitions'][bodyParameterName]) {
+              p = obj[bp]['schema']['properties'];
+            }
+            else {
+              p = rootobj['definitions'][bodyParameterName]['properties'];
+            }
 
-      fnname = 'post' + apiname.substr(1, apiname.length);
-      tem['functions'][fnname] = [];
-      for (var k in p) {
-        tem['functions'][fnname].push(k);
-        tem['template']['body'][k] = '{' + k + '}';
-      }
+            var fnname = 'post' + apiname.substr(1, apiname.length);
+            tem['functions'][fnname] = [];
+            for (var k in p)
+            {
+                tem['functions'][fnname].push(k);
+                tem['template']['body'][k] = '{'+k+'}';
+            }
+        }
     }
-  }
 
-  debugLog('<< processBodyParameters');
+    debugLog('<< processBodyParameters');
 }
 
 function processPostOperation(creds, apiname, obj, tem) {
-  debugLog('>> processPostOperation');
+    debugLog('>> processPostOperation');
 
-  processHeaderParameters(creds, apiname, obj['parameters'], tem);
-  processBodyParameters(apiname, obj['parameters'], tem);
+    processHeaderParameters(creds, apiname, obj['parameters'], tem);
+    processBodyParameters(apiname, obj['parameters'], tem);
 
-  debugLog('<< processPostOperation');
+    debugLog('<< processPostOperation');
 }
 
 function processAPI(creds, apiname, obj, tem) {
-  debugLog('>> processAPI ');
+    debugLog('>> processAPI ');
 
-  for (var ops in obj) {
-    if (ops == 'get') {
-      tem['template']['method'] = 'GET';
-      processGetOperation(creds, apiname, obj[ops], tem);
-    } else if (ops == 'post') {
-      tem['template']['method'] = 'POST';
-      processPostOperation(creds, apiname, obj[ops], tem);
+    for (var ops in obj) {
+        if ( ops == 'get') {
+            tem['template']['method'] = 'GET';
+            processGetOperation(creds, apiname, obj[ops], tem);
+        }
+        else if (ops == 'post') {
+            tem['template']['method'] = 'POST';
+            processPostOperation(creds, apiname, obj[ops], tem);
+        }
     }
-  }
 
-  debugLog('<< processAPI');
+    debugLog('<< processAPI');
 }
 
 function processPaths(creds, obj, tem) {
-  debugLog('>> processPaths');
+    debugLog('>> processPaths');
 
-  for (var apiobj in obj) {
-    tem = JSON.parse(JSON.stringify(skeltemplate));
-    getURL(rootobj, tem);
-    var urln = tem['template']['url'];
-    tem['template']['url'] = urln + apiobj;
-    processAPI(creds, apiobj, obj[apiobj], tem);
-    mastertemplate['operations'].push(tem);
-  }
+    for (var apiobj in obj) {
+        tem = JSON.parse(JSON.stringify(skeltemplate));
+        getURL(rootobj, tem);
+        var urln = tem['template']['url'];
+        tem['template']['url'] = urln + apiobj;
+        processAPI(creds, apiobj, obj[apiobj], tem);
+        mastertemplate['operations'].push(tem);
+    }
 
-  debugLog('<< processPaths');
+    debugLog('<< processPaths');
 }
 
 function writeTemplateFile(file, data) {
-  fs.writeFile(file, JSON.stringify(data, null, 2), 'utf8', function(err, data) {
-    if (err) {
-      return console.log(err);
-    }
-  });
+    fs.writeFile(file, JSON.stringify(data, null, 2), 'utf8', function(err, data) {
+        if (err) {
+            return console.log(err);
+        }
+    });
 }
 
 var zosconnecteeNode = [];
 
 /* default options used for every models */
 var defOptions = {
-  'plural': '',
-  'validations': [],
-  'relations': {},
-  'acls': [],
-  'methods': {},
-  'idInjection': true,  /* By default ID Injection is set to true */
-};
+                "plural": "",
+                "validations": [],
+                "relations": {},
+                "acls": [],
+                "methods": {},
+                "idInjection": true,  /* By default ID Injection is set to true */
+              };
 
 /*
  * Yeoman generator code
@@ -281,15 +290,18 @@ var defOptions = {
 module.exports = yeoman.Base.extend({
 
   // The name `constructor` is important here
-  constructor: function() {
+  constructor: function () {
     yeoman.Base.apply(this, arguments);
     this.resource = [];
   },
 
   // Get the list of datasources from the connector
-  createDatasourceList: function() {
+  createDatasourceList : function()
+  {
     var done = this.async();
     var that = this;  // that will be used as a reference to this in all the async jobs
+
+    // this.log('am here');
 
     wsModels.DataSourceDefinition.find(
       function(err, dsDef) {
@@ -297,7 +309,8 @@ module.exports = yeoman.Base.extend({
 
         var tempList = [];
         dsDef.map(function(datasource) {
-          if (datasource.connector == 'zosconnectee') {
+          if(datasource.connector == 'zosconnectee')
+          {
             tempList.push(datasource);
           }
         });
@@ -308,15 +321,16 @@ module.exports = yeoman.Base.extend({
   },
 
   // Select the list of datasources for which the model needs to be created
-  selectDataSource: function() {
+  selectDataSource : function()
+  {
     var done = this.async(); // Start sync
     var choices = [];
 
-    this.datasources.map(function(datasource) {
+    this.datasources.map(function(datasource){
       choices.push({
-        name: datasource.name,
-        value: datasource.name,
-        checked: false,
+        name : datasource.name,
+        value : datasource.name,
+        checked : false,
       });
     });
 
@@ -327,16 +341,16 @@ module.exports = yeoman.Base.extend({
       message: 'Which all data sources you want to Discover services from?',
       choices: choices,
       validate: function(input) {
-        var done = this.async();
-        if (input == '') {
-          done('You should provide atleast one data source');
-        }
-        done(true);
-      },
+                  var done = this.async();
+                  if (input == "") {
+                    done("You should provide atleast one data source");
+                  }
+                  done(null, true);
+                }
     }];
 
     // Consider only selected datasources for discovery
-    this.prompt(prompts, function(selected) {
+    this.prompt(prompts).then((selected) => {
       var tempList = [];
 
       this.datasources.map(function(datasource) {
@@ -347,7 +361,7 @@ module.exports = yeoman.Base.extend({
 
       this.datasources = tempList;
       done(); // End sync
-    }.bind(this));
+    });
   },
 
   /*
@@ -363,7 +377,8 @@ module.exports = yeoman.Base.extend({
    * add the response to the global resourcelist
    */
 
-  discoverDataSources: function() {
+  discoverDataSources : function()
+  {
     var done = this.async();
     var tempList = [];
 
@@ -371,7 +386,7 @@ module.exports = yeoman.Base.extend({
       // Check if the datasource provides the swagger document
       // or reach to the URL to query the swagger document
       //
-      if (datasource.swaggerfile.localeCompare('')) {
+      if (datasource.swaggerfile.localeCompare("")) {
         // swagger document provided in the datasource
         //
         fs.readFile('server/' + datasource.swaggerfile, 'utf8', function(err, data) {
@@ -394,65 +409,69 @@ module.exports = yeoman.Base.extend({
               if (!api.host) {
                 api['host'] = datasource.host + ':' + datasource.port;
               }
-              tempList.push({ 'dsName': datasource.name,
-                'dsUserName': datasource.username,
-                'dsPassword': datasource.password,
-                'apititle': api.info.title,
-                'apiversion': api.info.version,
-                'apiinfo': api.info.description,
-                'apidocs': api });
+              tempList.push({'dsName' : datasource.name,
+                             'dsUserName' : datasource.username,
+                             'dsPassword' : datasource.password,
+                             'apititle': api.info.title,
+                             'apiversion' : api.info.version,
+                             'apiinfo' : api.info.description,
+                             'apidocs' : api});
               done();
-            });
+          });
         });
-      } else {
+      }
+      else
+      {
         try {
           var authcode = 'Basic ' + new Buffer(datasource.username + ':' + datasource.password).toString('base64');
+          var authcode = '';
 
           // Get the api doc from the zosconnectee datasource
           var options = {
-            'method': 'GET',
-            'hostname': datasource.host,
-            'port': datasource.port,
-            'path': '/zosConnect/apis/',
-            'headers': {
-              'Authorization': authcode,
-              'cache-control': 'no-cache',
-            },
+            "method": "GET",
+            "hostname": datasource.host,
+            "port": datasource.port,
+            "path": "/zosConnect/apis/",
+            "headers": {
+              "Authorization": authcode,
+              "cache-control": "no-cache"
+            }
           };
 
-          process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-          var req = http.request(options, function(res) {
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+          var req = http.request(options, function (res) {
             var chunks = [];
 
-            res.on('data', function(chunk) {
+            res.on("data", function (chunk) {
               chunks.push(chunk);
             });
 
-            res.on('end', function() {
+            res.on("end", function () {
               var body = Buffer.concat(chunks);
               var apislist = JSON.parse(body.toString());
 
-              for (var apik in apislist['apis']) {
+              for (var apik in apislist['apis'])
+              {
                 // Get the api doc from the zosconnectee datasource
                 var options = {
-                  'method': 'GET',
-                  'hostname': datasource.host,
-                  'port': datasource.port,
-                  'path': '/zosConnect/apis/' + apislist['apis'][apik].name,
-                  'headers': {
-                    'Authorization': authcode,
-                    'cache-control': 'no-cache',
-                  },
+                  "method": "GET",
+                  "hostname": datasource.host,
+                  "port": datasource.port,
+                  "path": "/zosConnect/apis/" + apislist['apis'][apik].name,
+                  "headers": {
+                    "Authorization": authcode,
+                    "cache-control": "no-cache"
+                  }
                 };
 
-                var req = http.request(options, function(res) {
+                var req = http.request(options, function (res) {
                   var chunks = [];
 
-                  res.on('data', function(chunk) {
+                  res.on("data", function (chunk) {
                     chunks.push(chunk);
                   });
 
-                  res.on('end', function() {
+                  res.on("end", function () {
                     var body = Buffer.concat(chunks);
                     var catalogURI = JSON.parse(body.toString());
 
@@ -460,24 +479,24 @@ module.exports = yeoman.Base.extend({
                     var uriobj = url.parse(catalogURI.documentation.swagger);
 
                     var options = {
-                      'method': 'GET',
-                      'hostname': datasource.host, // datasource.host
-                      'port': datasource.port, // datasource.port
-                      'path': uriobj.path, // fixed URL
-                      'headers': {
-                        'Authorization': authcode,
-                        'cache-control': 'no-cache',
-                      },
+                      "method": "GET",
+                      "hostname": datasource.host, // datasource.host
+                      "port": datasource.port, // datasource.port
+                      "path": uriobj.path, // fixed URL
+                      "headers": {
+                        "Authorization": authcode,
+                        "cache-control": "no-cache"
+                      }
                     };
 
-                    var req = http.request(options, function(res) {
+                    var req = http.request(options, function (res) {
                       var chunks = [];
 
-                      res.on('data', function(chunk) {
+                      res.on("data", function (chunk) {
                         chunks.push(chunk);
                       });
 
-                      res.on('end', function() {
+                      res.on("end", function () {
                         var body = Buffer.concat(chunks);
                         var apidoc = JSON.parse(body.toString());
 
@@ -494,14 +513,15 @@ module.exports = yeoman.Base.extend({
                             if (!api.host) {
                               api['host'] = datasource.host + ':' + datasource.port;
                             }
-                            tempList.push({ 'dsName': datasource.name,
-                              'dsUserName': datasource.username,
-                              'dsPassword': datasource.password,
-                              'apititle': api.info.title,
-                              'apiversion': api.info.version,
-                              'apiinfo': api.info.description,
-                              'apidocs': api });
-                            if (tempList.length >= apislist['apis'].length) {
+                            tempList.push({'dsName' : datasource.name,
+                                         'dsUserName' : datasource.username,
+                                         'dsPassword' : datasource.password,
+                                         'apititle': api.info.title,
+                                         'apiversion' : api.info.version,
+                                         'apiinfo' : api.info.description,
+                                         'apidocs' : api});
+                            if (tempList.length >= apislist['apis'].length)
+                            {
                               done();
                             }
                           });
@@ -526,21 +546,21 @@ module.exports = yeoman.Base.extend({
   },
 
   // Select the Models from the fetched swagger document
-  selectModels: function() {
+  selectModels : function(){
     var done = this.async();
     var choices = [];
 
-    if (this.resourceList.length == 0) {
-      done('No resources discoverd');
+    if(this.resourceList.length == 0){
+      done("No resources discoverd");
       return;
     }
 
-    this.resourceList.map(function(resource) {
+    this.resourceList.map(function(resource){
       choices.push({
-        name: resource.apititle + ' ' + resource.apiversion + ' [ ' + resource.apiinfo + ' ]',
-        value: resource.apititle,
-        checked: false,
-      });
+        name : resource.apititle + ' ' + resource.apiversion + ' [ ' + resource.apiinfo + ' ]',
+        value : resource.apititle,
+        checked : false
+      })
     });
 
     var prompts = [{
@@ -549,29 +569,30 @@ module.exports = yeoman.Base.extend({
       message: 'Which resources you want to select for Model creation?',
       choices: choices,
       validate: function(input) {
-        var done = this.async();
-        if (input == '') {
-          done('You should provide atleast one resource');
-        }
-        done(true);
-      },
+                  var done = this.async();
+                  if (input == "") {
+                    done("You should select atleast one resource");
+                  }
+                  done(null, true);
+                }
     }];
 
-    this.prompt(prompts, function(selected) {
+    this.prompt(prompts).then((selected) => {
       var tempList = [];
       /* Consider only selected datasources for discovery */
-      this.resourceList.map(function(resource) {
-        if (selected.models.indexOf(resource.apititle) >= 0) {
+      this.resourceList.map(function(resource){
+        if( selected.models.indexOf(resource.apititle) >= 0)
+        {
           tempList.push(resource);
         }
       });
       this.resourceList = tempList;
       done();               /* End Sync */
-    }.bind(this));
+    });
   },
 
   // Customize the model if the user wishes
-  customizeModels: function() {
+  customizeModels : function(){
     var done = this.async();
     var resources = [];
 
@@ -579,16 +600,16 @@ module.exports = yeoman.Base.extend({
       type: 'confirm',
       name: 'customizeModels',
       message: 'Do you want to customize the imported resources?',
-      default: false,
+      default: false
     }];
 
-    this.prompt(prompts, function(value) {
+    this.prompt(prompts).then((value) => {
       customizeRequired = value.customizeModels;
 
       rootobj = JSON.parse(JSON.stringify(this.resourceList[0].apidocs));
-      var creds = {
-        'username': this.resourceList[0].dsUserName,
-        'password': this.resourceList[0].dsPassword,
+      creds = {
+        'username' : this.resourceList[0].dsUserName,
+        'password' : this.resourceList[0].dsPassword
       };
 
       processPaths(creds, rootobj['paths'], tem);
@@ -597,88 +618,96 @@ module.exports = yeoman.Base.extend({
         var tobj = robj[k]['template'];
         var fobj = robj[k]['functions'];
         for (var f in fobj) {
-          var v = '[' + tobj['method'] + ' ' + tobj['url'] + ']' + ' --> model.' + f + '(' + fobj[f] + ')';
+          var v = "[" + tobj['method'] + ' ' + tobj['url'] + "]" + ' --> model.' + f + '(' + fobj[f] + ')';
           resourceKeyList.push(tobj['url']);
         }
       }
       mastertemplate['name'] = this.resourceList[0].apititle;
 
       done();
-    }.bind(this));
+    });
   },
-  customizeResources: function() {
+  customizeResources : function()
+  {
     var done = this.async(); // Start sync
     var choices = [];
 
-    if (customizeRequired == true) {
-      for (var v in resourceKeyList) {
-        choices.push({
-          name: resourceKeyList[v],
-          value: resourceKeyList[v],
-          checked: true,
-        });
-      }
+    if (customizeRequired == true)
+    {
+
+    for (var v in resourceKeyList) {
+      choices.push({
+        name : resourceKeyList[v],
+        value : resourceKeyList[v],
+        checked : true,
+      });
+    }
 
     // Create prompt message
-      var prompts = [{
-        type: 'checkbox',
-        name: 'resourceKey',
-        message: 'Which all resources do you want to create models for?',
-        choices: choices,
-        validate: function(input) {
-          var done = this.async();
-          if (input == '') {
-            done('You should select atleast one');
-          }
-          done(true);
-        },
-      }];
+    var prompts = [{
+      type: 'checkbox',
+      name: 'resourceKey',
+      message: 'Which all resources do you want to create models for?',
+      choices: choices,
+      validate: function(input) {
+                  var done = this.async();
+                  if (input == "") {
+                    done("You should select atleast one");
+                  }
+                  done(null, true);
+                }
+    }];
 
-      this.prompt(prompts, function(selected) {
-        var tempList = [];
-        var deleteResourceList = [];
+    this.prompt(prompts).then((selected) => {
+      var tempList = [];
+      var deleteResourceList = [];
+      var k;
+      var j;
 
-        for (var k in resourceKeyList) {
-          var found = false;
-          for (var j in selected.resourceKey) {
-            if (resourceKeyList[k].localeCompare(selected.resourceKey[j]) == 0) {
-              found = true;
-              break;
-            }
-          }
-          if (found == false) {
-            deleteResourceList.push(resourceKeyList[k]);
+      for (k in resourceKeyList) {
+        var found = false;
+        for (j in selected.resourceKey) {
+          if (resourceKeyList[k].localeCompare(selected.resourceKey[j]) == 0){
+            found = true;
+            break;
           }
         }
+        if (found == false) {
+          deleteResourceList.push(resourceKeyList[k]);
+        }
+      }
 
-        for (var i in deleteResourceList) {
-          var robj = mastertemplate['operations'];
-          for (var k in robj) {
-            var tobj = robj[k]['template'];
-            var fobj = robj[k]['functions'];
-            if (deleteResourceList[i].localeCompare(tobj.url) == 0) {
-              robj.splice(k, 1);
-            }
+      for (var i in deleteResourceList) {
+        var robj = mastertemplate['operations'];
+        for (var k in robj) {
+          var tobj = robj[k]['template'];
+          var fobj = robj[k]['functions'];
+          if (deleteResourceList[i].localeCompare(tobj.url) == 0) {
+            robj.splice(k, 1);
           }
         }
-        done(); // End sync
-      }.bind(this));
-    } else {
-      done();
-    }
+      }
+      done(); // End sync
+
+
+    });
+       } else {
+        done();
+       }
   },
 
   // Complete the processing and exit
-  Finish: function() {
+  Finish : function()
+  {
     var done = this.async();
 
     // It's time to write to the template file
     //
-    var templateFile = 'server/' + this.resourceList[0].dsName + '_template.json';
+    var templateFile = 'server/'+ this.resourceList[0].dsName + '_template.json';
     writeTemplateFile(templateFile, mastertemplate);
 
-    var finalResourcesH = [];
-    var finalResourcesR = [];
+    var finalresources_h = [];
+    var finalresources_r = [];
     var robj = mastertemplate['operations'];
     for (var k in robj) {
       var tobj = robj[k]['template'];
@@ -687,53 +716,55 @@ module.exports = yeoman.Base.extend({
       for (var f in fobj) {
         var v = '[' + tobj['method'] + ' ' + tobj['url'] + ']';
         var w = ' : model.' + f + '(' + fobj[f] + ')';
-        finalResourcesH.push(v);
-        finalResourcesR.push(w);
+        finalresources_h.push(v);
+        finalresources_r.push(w);
       }
     }
 
     console.log(chalk.bold('Success. Below are the auto discovered model functions that you may use:'));
-    for (var m in finalResourcesH) {
-      console.log(chalk.yellow(finalResourcesH[m]) + chalk.green(finalResourcesR[m]));
+    for (var m in finalresources_h) {
+      console.log(chalk.yellow(finalresources_h[m]) + chalk.green(finalresources_r[m]));
     }
 
-    console.log(chalk.bold('You can further customize the models using the template file located at ' +
-      chalk.green(templateFile)));
+    console.log(chalk.bold('You can further customize the models using the template file located at ' + chalk.green(templateFile)));
 
     done();
   },
 
 /* Helper Functions */
 
-  _createLoopbackPersistentModel: function(resName, modelProperties, dsName, idInjection,
-                                           modelStruct, operationSet, idParameter) {
+  _createLoopbackPersistentModel: function(resName, modelProperties,dsName,idInjection,modelStruct,operationSet,idParameter){
     var done = this.async();
     var self = this;
     var modelOptions = defOptions;
     modelOptions.idInjection = idInjection;
-    try {
-      this._createModel(resName, modelProperties, modelOptions, dsName, 'PersistedModel',
-          modelStruct, operationSet, idParameter, function(err, data) {
-            if (err) {
-              console.log('Failed to create Model ' + resName);
-              var message = err.message == undefined ? err : err.message;
-              console.log(message);
-            } else {
-              console.log('Model ' + resName + ' Created Successfully');
-            }
-            done();
-          });
-    } catch (ex) {
-      console.log('Failed to create Model for Resource ' + resName);
-      console.log('Details : ' + ex);
+    try{
+      this._createModel(resName,modelProperties,modelOptions,dsName,'PersistedModel',modelStruct,operationSet,idParameter,function(err,data){
+      if(err)
+      {
+          console.log('Failed to create Model '+resName);
+          var message = err.message == undefined ? err : err.message;
+          console.log(message);
+      }
+      else{
+          console.log('Model '+resName+' Created Successfully');
+      }
+      done();
+      });
+
+    } catch(ex)
+    {
+      console.log("Failed to create Model for Resource "+resName);
+      console.log("Details : "+ex);
     }
+
   },
 
-  _createLoopbackBasicModel: function(basicModelList, dsName, idInjection) {
+  _createLoopbackBasicModel : function(basicModelList,dsName,idInjection){
     var that = this;
     var done = this.async();
-    basicModelList.map(function(basicModel) {
-      if (basicModel.BasicModels.length > 0) {
+    basicModelList.map(function(basicModel){
+      if(basicModel.BasicModels.length > 0){
         that._createLoopbackBasicModel(basicModelList.BasicModels);
       }
       var resName = basicModel.modelName;
@@ -741,133 +772,138 @@ module.exports = yeoman.Base.extend({
       var modelOptions = defOptions;
 
       modelOptions.idInjection = false;     /* Always set idInjection to false for basic models */
-      try {
-        that._createModel(resName, modelProperties, modelOptions, dsName, 'Model', function(err, data) {
-          if (err !== null) {
-            that._logStep('Failed to create Model ' + resName + 'err');
+      try{
+          that._createModel(resName,modelProperties,modelOptions,dsName,'Model',function(err,data){
+          if(err !== null)
+          {
+            that._logStep('Failed to create Model '+resName+'err');
           }
+
         });
-      } catch (ex) {
-        console.log('Failed to create Model for Resource ' + resName);
-        console.log('Details : ' + ex);
+      }catch(ex){
+        console.log("Failed to create Model for Resource "+resName);
+        console.log("Details : "+ex);
       }
     });
     done();
   },
 
-  _createModel: function(modelName, properties, options, datasource, modelType,
-     modelStruct, operationSet, idParameter, callback)  {
-    var cb = callback || this.async();
+  _createModel: function(modelName, properties, options, datasource,modelType,modelStruct,operationSet,idParameter,cb)  {
+    var cb = cb || this.async();
     var self = this;
     var isID = idParameter == false ? false : true;
 
     var model = {
-      name: modelName,
-      facetName: 'common',
-      idInjection: isID,
-      base: modelType,
+          name: modelName,
+          facetName: 'common',
+          idInjection: isID,
+          base: modelType
     };
 
     ModelDefinition.create(model, function(err, modelDef) {
-      if (err)  return cb(err);
-      var tempPropList = [];
-      for (var key in properties) {
-        var tempJSON = properties[key];
-        tempJSON['name'] = key;
-        tempPropList.push(tempJSON);
-      }
-      modelDef.properties.create(tempPropList, function(err, data) {
-        if (err) return cb(err);
-        ModelConfig.create({
-          dataSource: datasource,
-          facetName: 'server',
-          name: modelName,
-          public: true,
-        }, function(err, data) {
-          if (err) cb(err);
-          if (modelStruct != undefined) {
-            self._logStep('Updating Model Custom file with js-struct information');
-            /* Now re-construct only the PersistedModel custom file with discover/templates/modelcustom.js */
-            self._addStructModelToModelCustomFile(modelName, modelStruct, operationSet, idParameter);
-          }
-          cb();
-        });
-      });
+        if(err)  return cb(err);
+        var tempPropList = [];
+        for(key in properties)
+        {
+          var tempJSON = properties[key];
+          tempJSON['name'] = key;
+          tempPropList.push(tempJSON);
+        }
+        modelDef.properties.create(tempPropList,function(err,data){
+            if(err) return cb(err);
+            ModelConfig.create({
+                    dataSource: datasource,
+                    facetName: "server",
+                    name: modelName,
+                    public: true
+            },function(err,data){
+                    if(err) cb(err);
+                    if(modelStruct != undefined)
+                    {
+                        self._logStep('Updating Model Custom file with js-struct information');
+                        /* Now re-construct only the PersistedModel custom file with discover/templates/modelcustom.js */
+                        self._addStructModelToModelCustomFile(modelName,modelStruct,operationSet,idParameter);
+                      }
+                    cb();
+                  });
+            });
     });
   },
-  _getStructInfoFromResDefinition: function(ModelDefinition, modelName, isPacked) {
+  _getStructInfoFromResDefinition: function(ModelDefinition,modelName,isPacked) {
       /* Add Struct Model to model custom file */
 
-    var modelProperties = ModelDefinition.structModel;
-    var structName = typeof modleName != undefined ? modelName :
-      typeof ModelDefinition.modelName != 'undefined' ? ModelDefinition.modelName : '';
-    var structField = '';
-    structField = convertModelPropertiesToJSStruct(modelProperties, isPacked);
-    var that = this;
-    ModelDefinition.BasicModels.map(function(model) {
-      structField += that._getStructInfoFromResDefinition(model, undefined, isPacked);
-    });
-    return structField;
+      var modelProperties = ModelDefinition.structModel;
+      var structName = typeof modleName != undefined ? modelName : typeof ModelDefinition.modelName != 'undefined' ? ModelDefinition.modelName : '';
+      var structField = '';
+      structField = convertModelPropertiesToJSStruct(modelProperties,isPacked);
+      var that = this;
+      ModelDefinition.BasicModels.map(function(model){
+            structField+=that._getStructInfoFromResDefinition(model,undefined,isPacked);
+      });
+      return structField;
   },
-  _addStructModelToModelCustomFile: function(modelName, modelStruct, operationSet, idParameter) {
+  _addStructModelToModelCustomFile : function(modelName,modelStruct,operationSet,idParameter){
     var done = this.async();
 
-    var modelJsonFile = ModelDefinition.getPath('common', { name: modelName });
-    try {
-      var modelCustomFile = modelJsonFile.slice(0, modelJsonFile.length - 2);
-    } catch (ex) {
-      console.log('Model ' + modelName + ' not found');
+    modelJsonFile = ModelDefinition.getPath('common', { name: modelName });
+    try{
+        modelCustomFile = modelJsonFile.slice(0,modelJsonFile.length-2);
+    } catch(ex){
+      console.log('Model '+modelName+' not found');
       done(ex);
     }
 
-    if (idParameter == false) {
-      var jsonObj = fs.readJsonSync(modelJsonFile, { throws: false });
+    if( idParameter == false )
+    {
+      var jsonObj = fs.readJsonSync(modelJsonFile,{throws: false});
       jsonObj.properties.id = null;
-      fs.writeJsonSync(modelJsonFile, jsonObj);
+      fs.writeJsonSync(modelJsonFile,jsonObj);
     }
 
     /* Read template to construct model custom file content */
     var template = tempfile;
 
-    var loopbackSkeletonOperation = { POST: 'create', PUT: 'upsert', GET: 'findById', DELETE: 'deleteById' };
+    var loopbackSkeletonOperation = { POST : 'create', PUT: 'upsert', GET: 'findById', DELETE: 'deleteById' };
     var configuredOperations = '\'';
-    for (var operation in operationSet) {
-      configuredOperations += loopbackSkeletonOperation[operation] + ' ';
+    for( operation in operationSet){
+      configuredOperations+=loopbackSkeletonOperation[operation]+' ';
+
     }
-    configuredOperations += '\'';
+    configuredOperations+='\'';
 
-    template = template.replace(new RegExp('\\$1', 'g'), modelName);
-    template = template.replace('$2', modelStruct);
-    template = template.replace('$3', configuredOperations);
-    template = template.replace('$4', JSON.stringify(operationSet));
+    template = template.replace(new RegExp('\\$1', 'g'),modelName);
+    template = template.replace('$2',modelStruct);
+    template = template.replace('$3',configuredOperations);
+    template = template.replace('$4',JSON.stringify(operationSet));
 
-    if (idParameter == false)
-      template = template.replace('$5', undefined);
+    if(idParameter == false)
+      template = template.replace('$5',undefined);
     else {
-      template = template.replace('$5', '\'' + idParameter + '\'');
+      template = template.replace('$5','\''+idParameter+'\'');
     }
 
-    fs.writeFileSync(modelCustomFile, template);
+    fs.writeFileSync(modelCustomFile,template);
     done();
   },
   _isVerbose: function() {
-    return !!this.options.l;
-  },
+      return !!this.options.l;
+    },
 
   _logPart: function() {
-    this.log(chalk.bold(util.format.apply(null, arguments)));
+    this.log(chalk.bold(format.apply(null, arguments)));
   },
 
   _logStep: function() {
     if (!this._isVerbose()) return;
-    this.log(chalk.cyan('  ' + util.format.apply(null, arguments)));
-  },
+    this.log(chalk.cyan('  ' + format.apply(null, arguments)));
+  }
 
 });
 
+
 function createDebugLogger(yolog) {
   function debugLog() {
-    util.debug.apply(null, arguments);
+    debug.apply(null, arguments);
     return debugLog;
   }
 
@@ -880,7 +916,7 @@ function createDebugLogger(yolog) {
       return this.write('\n');
     }
 
-    util.debug(util.format.apply(util, arguments));
+    debug(util.format.apply(util, arguments));
     return this;
   };
 
@@ -890,17 +926,17 @@ function createDebugLogger(yolog) {
 // test function ONLY!!  Never call this
 //
 function test() {
-  fs.readFile('CatalogManager.yaml', 'utf8', function(err, data) {
-    if (err) {
-      return console.log(err);
-    }
-    rootobj = JSON.parse(data);
-    processPaths(rootobj['paths'], tem);
-    console.log(JSON.stringify(mastertemplate, null, 2));
-    fs.writeFile('test.json', JSON.stringify(mastertemplate, null, 2), 'utf8', function(err) {
-      if (err) {
-        return console.log(err);
-      }
+    fs.readFile('CatalogManager.yaml', 'utf8', function(err, data) {
+        if (err) {
+            return console.log(err);
+        }
+        rootobj = JSON.parse(data);
+        processPaths(rootobj['paths'], tem);
+        console.log(JSON.stringify(mastertemplate, null, 2));
+        fs.writeFile('test.json', JSON.stringify(mastertemplate, null, 2), 'utf8', function(err) {
+            if (err) {
+                return console.log(err);
+            }
+        });
     });
-  });
 }
