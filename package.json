@@ -9,8 +9,7 @@
   "scripts": {
     "test": "echo \"Done\"",
     "lint": "eslint .",
-    "posttest": "npm run lint",
-    "install" : "tar czf generator-zosconnectee.tgz generator-zosconnectee; npm install generator-zosconnectee.tgz -g"
+    "posttest": "npm run lint"
   },
   "keywords": [
     "IBM",
