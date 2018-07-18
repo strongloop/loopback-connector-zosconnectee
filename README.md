@@ -1,3 +1,5 @@
+[![Module LTS Adopted'](https://img.shields.io/badge/Module%20LTS-Adopted-brightgreen.svg?style=flat)](http://github.com/CloudNativeJS/ModuleLTS)
+
 # LoopBack connector for z/OS Connect Enterprise Edition
 
 IBM® z/OS® Connect Enterprise Edition (EE) V2.0 extends the value of applications that run on z/OS by allowing efficient and scalable APIs for contemporary mobile and cloud applications to be easily created. The `loopback-connector-zosconnectee` module is the LoopBack connector for z/OS Connect Enterprise Edition.
@@ -40,3 +42,11 @@ You may further edit the generated template file located in your LoopBack applic
 
 * Cannot view/edit the z/OS Connect datasource through apic edit graphical console
 * timeout functionality (attribute in the connectors settings) is not yet implemented
+
+### Module Long Term Support Policy
+This module adopts the [Module Long Term Support (LTS)](http://github.com/CloudNativeJS/ModuleLTS) policy, with the following End Of Life (EOL) dates:
+
+ | Module Version   | Release Date | Minimum EOL | EOL With     | Status  |
+ |------------------|--------------|-------------|--------------|---------|
+ | V1.0.0	        | Nov 2017     | Dec 2019    | Node 8       | Current |
+
