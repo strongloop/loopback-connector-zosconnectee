@@ -25,6 +25,7 @@
     "type": "git",
     "url": "https://github.com/strongloop/loopback-connector-zosconnectee"
   },
+  "copyright.owner": "IBM Corp.",
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
