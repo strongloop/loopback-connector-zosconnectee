@@ -33,7 +33,7 @@
     "loopback-connector-rest": "^3.6.0"
   },
   "devDependencies": {
-    "eslint": "^3.17.1",
+    "eslint": "^7.0.0",
     "eslint-config-loopback": "^1.0.0"
   }
 }
