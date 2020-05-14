@@ -30,7 +30,7 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "colors": "^1.1.2",
-    "loopback-connector-rest": "^2.0.0"
+    "loopback-connector-rest": "^3.6.0"
   },
   "devDependencies": {
     "eslint": "^3.17.1",
