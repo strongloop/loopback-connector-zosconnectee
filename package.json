@@ -1,10 +1,10 @@
 {
   "name": "loopback-connector-zosconnectee",
-  "version": "1.0.1",
+  "version": "2.0.0-1",
   "description": "LoopBack Connector for z/OS Connect Enterprise Edition",
   "main": "index.js",
   "engines": {
-    "node": ">=4"
+    "node": ">=10"
   },
   "scripts": {
     "test": "echo \"Done\"",
@@ -29,12 +29,11 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
-    "async": "^1.5.2",
     "colors": "^1.1.2",
-    "loopback-connector-rest": "^2.0.0"
+    "loopback-connector-rest": "^3.6.0"
   },
   "devDependencies": {
-    "eslint": "^3.17.1",
+    "eslint": "^7.0.0",
     "eslint-config-loopback": "^1.0.0"
   }
 }
